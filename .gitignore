@@ -1,0 +1,101 @@
+# Ignore large files (>100MB)
+# To ignore files larger than 100MB, you can use a pre-commit hook or manually add them to gitignore
+# Alternatively, you can use git attributes with filter.largefiles or use a tool like git-lfs
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+
+# Large data files (common extensions that can be large)
+*.csv.gz
+*.parquet
+*.h5
+*.hdf5
+*.feather
+*.pickle
+*.pkl
+*.joblib
+*.npz
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Model files (often very large)
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.model
+*.safetensors
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# OS files
+Thumbs.db
+
+# Docker
+docker/
+Dockerfile*
+docker-compose*.yml
+.dockerignore
