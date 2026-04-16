@@ -1,7 +1,7 @@
 import sys
 
 from app.core.logger import logger
-from app.import_process.agent.ImportGraphState import ImportGraphState
+from app.import_process.agent.state import ImportGraphState
 
 
 def node_document_split(state: ImportGraphState) -> ImportGraphState:

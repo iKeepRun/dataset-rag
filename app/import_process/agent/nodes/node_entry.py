@@ -1,6 +1,6 @@
 import sys
 
-from app.import_process.agent.ImportGraphState import ImportGraphState, create_default_state
+from app.import_process.agent.state import ImportGraphState, create_default_state
 from app.core.logger import logger
 
 
