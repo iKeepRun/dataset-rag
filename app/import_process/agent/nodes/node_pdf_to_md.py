@@ -2,13 +2,13 @@ import os
 import shutil
 import sys
 import time
+import uuid
 import zipfile
 from pathlib import Path
-from turtledemo.penrose import start
+
 
 import requests
-from requests import session
-from sympy.utilities.misc import func_name
+
 
 from app.conf.mineru_config import mineru_config
 from app.import_process.agent.state import ImportGraphState, create_default_state
@@ -43,6 +43,11 @@ def step_1_validate_path(state):
     return pdf_path_obj, local_dir_obj
 
 def step_2_upload_and_get_zip(pdf_path_obj):
+    """
+    上传pdf文件到minerU，获取到上传地址之后，上传文件，并根据返回的batchId 轮询获取结果
+    :param pdf_path_obj:
+    :return: 返回md压缩文件的下载地址
+    """
     token = mineru_config.api_key
     url = mineru_config.base_url
     header = {
@@ -123,12 +128,14 @@ def step_3_download_and_unzip(zip_url, local_dir_obj, stem):
     if response.status_code != 200:
         logger.error(f"下载文件失败: {response.status_code}")
         raise RuntimeError("下载文件失败")
-    zip_down_dir=local_dir_obj/f"{stem}.zip"
+
+    zip_down_dir=local_dir_obj /f"{stem}.zip"
+    # Path(zip_down_dir).parent.mkdir(parents=True, exist_ok=True)
     with open(zip_down_dir, 'wb') as f:
         f.write(response.content)
     # 解压zip
     # 解压的路径
-    extract_target_dir=local_dir_obj/stem
+    extract_target_dir=local_dir_obj/str(uuid.uuid4())/stem
     if extract_target_dir.exists():
         # 递归删除目录及文件
        shutil.rmtree(extract_target_dir)
