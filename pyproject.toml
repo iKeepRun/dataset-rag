@@ -17,7 +17,7 @@ dependencies = [
     "modelscope>=1.35.4",
     "numpy>=2.4.4",
     "pandas>=3.0.2",
-    "pymilvus>=2.6.12",
+    "pymilvus[model]>=2.6.12",
     "pymilvus-model>=0.3.2",
     "pymongo>=4.16.0",
     "python-dotenv>=1.2.2",
@@ -27,4 +27,7 @@ dependencies = [
     "torchaudio>=2.11.0",
     "torchvision>=0.26.0",
     "uvicorn>=0.44.0",
+    "transformers>=4.57.6",
+    "addict>=2.4.0",
+    "lap>=0.5.13",
 ]
