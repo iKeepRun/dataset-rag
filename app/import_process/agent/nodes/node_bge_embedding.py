@@ -28,7 +28,7 @@ def node_bge_embedding(state: ImportGraphState) -> ImportGraphState:
         # 每个content 拆分的时候最大长度限制了 2000，实际长度会比2000小
         batch_size=5
         for i in range(0,len(chunks),batch_size):
-            batch_chunks=chunks[i,i+batch_size]
+            batch_chunks=chunks[i:i+batch_size]
 
             current_chunk_contents=[]
             for chunk in batch_chunks:
