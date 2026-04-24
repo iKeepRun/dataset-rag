@@ -7,7 +7,7 @@ from app.conf.milvus_config import milvus_config
 from app.core.logger import logger
 from app.import_process.agent.state import ImportGraphState
 from app.utils.escape_milvus_string_utils import escape_milvus_string
-from app.utils.task_utils import add_running_task
+from app.utils.task_utils import add_running_task, add_done_task
 
 
 def node_import_milvus(state: ImportGraphState) -> ImportGraphState:
@@ -150,40 +150,16 @@ def node_import_milvus(state: ImportGraphState) -> ImportGraphState:
                 client.load_collection(collection_name=collection_name)
                 logger.info(f"Milvus幂等性处理完成，已删除集合中[{clean_item_name}]的历史数据")
 
-        # 构造插入Milvus的数据：基础字段+非空向量字段
-        # data = {
-        #     "file_title": file_title,
-        #     "item_name": item_name
-        # }
-        # # 稠密向量非空才添加，避免空值入库报错
-        # if dense_vector is not None:
-        #     data["dense_vector"] = dense_vector
-        # # 稀疏向量非空则归一化后添加，保证检索准确性
-        # if sparse_vector is not None:
-        #     data["sparse_vector"] = sparse_vector
-
-        # data_list=[]
-        # for chunk in chunks:
-        #     data = {
-        #         "file_title": chunk["file_title"],
-        #         "item_name": chunk["item_name"],
-        #         "content": chunk["content"],
-        #         "dense_vector": chunk["dense_vector"],
-        #         "sparse_vector": chunk["sparse_vector"]
-        #     }
-        #     data_list.append(data)
         # 插入数据：列表格式支持批量插入，单条数据保持格式统一
         client.insert(collection_name=collection_name, data=chunks)
         # 插入后强制加载集合，确保数据立即可查、Attu可视化界面可见
         client.load_collection(collection_name=collection_name)
 
-        # 最终同步商品名称到全局状态
-        # state["item_name"] = item_name
-        # logger.info(f"步骤6：商品名称[{item_name}]成功存入Milvus集合[{collection_name}]，数据：{list(data.keys())}")
-        # 捕获所有Milvus操作异常：连接中断、入库失败、索引错误等，不中断主流程
     except Exception as e:
         logger.error(f"步骤6：数据存入Milvus失败，原因：{str(e)}", exc_info=True)
-
+    finally:
+        logger.info(f"节点{func_name}完成,数据状态{state}")
+        add_done_task(state['task_id'], func_name)
     return state
 
 
