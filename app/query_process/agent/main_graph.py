@@ -1,5 +1,9 @@
+import sys
+
 from langgraph.graph import StateGraph,END
 
+from app.import_process.agent.main_graph import kb_import_graph
+from app.import_process.agent.state import ImportGraphState
 from app.query_process.agent.nodes.node_search_embedding_hyde import node_search_embedding_hyde
 from app.query_process.agent.nodes.node_answer_output import node_answer_output
 from app.query_process.agent.nodes.node_item_name_confirm import node_item_name_confirm
@@ -51,3 +55,31 @@ work_flow.add_edge("node_answer_output",END)
 agent=work_flow.compile()
 
 print(agent.get_graph().print_ascii())
+
+
+def test_pdf_flow():
+    print("\n==测试PDF文件处理流程==")
+    # 模拟初始化状态
+    initial_state = ImportGraphState(
+        task_id="test_task_001",
+        local_file_path="test.pdf",
+        local_dir="./output",
+        # 确保相关开关被正确初始化（根据您的 state 定义，有些可能是默认值）
+        is_pdf_read_enabled=True
+    )
+
+    # 运行图
+    print("开始运行....")
+    try:
+        # 修正点：使用 .invoke() 方法
+        result = kb_import_graph.invoke(initial_state)
+        print("运行结束，最终的状态 keys:", result.keys())
+    except Exception as e:
+        print(f"运行报错：{e}")
+        # 打印详细堆栈以便调试
+        import traceback
+        traceback.print_exc()
+
+if __name__ == "__main__":
+    print("----", sys.path)
+    test_pdf_flow()

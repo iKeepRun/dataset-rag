@@ -1,3 +1,4 @@
+import copy
 from typing import TypedDict, List
 
 
@@ -25,3 +26,53 @@ class QueryGraphState(TypedDict):
     rewritten_query: str  # 改写后的用户问题
     history:str # 交互历史
     is_stream:bool # 是否流式返回
+
+query_graph_default_state: QueryGraphState = {
+    "session_id": "",
+    "original_query": "",
+    "embedding_chunks": [],
+    "hyde_embedding_chunks": [],
+    "web_search_docs": [],
+    "rrf_chunks": [],
+    "reranked_docs": [],
+    "prompt": "",
+    "answer": "",
+    "item_names": [],
+    "rewritten_query": "",
+    "history": [],
+    "is_stream": False
+
+}
+
+# ========================
+# 创建默认状态
+# ========================
+
+def create_query_default_state(**overrides) -> QueryGraphState:
+    """
+    创建查询流程的默认状态，支持覆盖字段
+    """
+    state = copy.deepcopy(query_graph_default_state)
+    state.update(overrides)
+    return state
+
+
+# ========================
+# 获取干净状态
+# ========================
+def get_query_default_state() -> QueryGraphState:
+    return copy.deepcopy(query_graph_default_state)
+
+
+# ========================
+# ✅ 状态复制函数（你要的）
+# ========================
+def copy_query_state(state: QueryGraphState, **overrides) -> QueryGraphState:
+    """
+    复制现有状态并可覆盖字段，深拷贝，不污染原数据
+    """
+    new_state = copy.deepcopy(state)
+    new_state.update(overrides)
+    return new_state
+
+
