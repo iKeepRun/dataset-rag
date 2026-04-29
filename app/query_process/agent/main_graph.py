@@ -52,9 +52,9 @@ work_flow.add_edge("node_rerank","node_answer_output")
 work_flow.add_edge("node_answer_output",END)
 
 
-agent=work_flow.compile()
+query_agent=work_flow.compile()
 
-print(agent.get_graph().print_ascii())
+print(query_agent.get_graph().print_ascii())
 
 
 def test_pdf_flow():
