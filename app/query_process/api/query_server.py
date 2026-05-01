@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.responses import StreamingResponse,FileResponse
 
+from app.clients.mongo_history_utils import clear_history, get_recent_messages
 from app.core.logger import logger
 from app.import_process.agent.state import create_default_state
 from app.query_process.agent.main_graph import query_agent
@@ -102,6 +103,38 @@ def stream(session_id: str,request: Request):
         media_type="text/event-stream"
     )
 
+
+@app.get("/history/{session_id}")
+async def history(session_id: str,limit: int = 10):
+    """
+    :param session_id:
+    :param limit: 切割的数量
+    :return:
+    """
+    # 获取历史对话
+    chats =  get_recent_messages(session_id,limit)
+    # items = []
+    # for chat in chats:
+    #     items.append(chat)
+    logger.info(f"查询历史对话，session_id = {session_id}成功！查询数据为：{chats}")
+    return {
+        "session_id":session_id,
+        "items": chats
+    }
+
+@app.delete("/history/{session_id}")
+async def delete_history(session_id: str):
+    """
+    :param session_id:
+    :return:
+    """
+    # 删除历史对话
+    delete_count = clear_history(session_id)
+    logger.info(f"删除历史对话，session_id = {session_id}成功,删除数量：{delete_count}！")
+    return {
+        "deleted_count":delete_count,
+        "message": f"{session_id}聊天记录删除成功！"
+    }
 
 if __name__ == '__main__':
     uvicorn.run( app, host="127.0.0.1", port=8860)
