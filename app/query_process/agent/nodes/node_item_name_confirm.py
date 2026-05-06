@@ -4,8 +4,11 @@ import sys
 from langchain_classic.agents.chat.prompt import HUMAN_MESSAGE
 from langchain_core.messages import SystemMessage, HumanMessage
 
+from app.clients.milvus_utils import create_hybrid_search_requests, get_milvus_client, hybrid_search
 from app.clients.mongo_history_utils import get_recent_messages, save_chat_message
+from app.conf.milvus_config import milvus_config
 from app.core.load_prompt import load_prompt
+from app.lm.embedding_utils import generate_embeddings
 from app.lm.lm_utils import get_llm_client
 from app.query_process.agent.state import QueryGraphState
 from app.core.logger import logger
@@ -60,6 +63,113 @@ def step_3_extract_info(original_query, history_messages):
 #                       item_names=item_names)
 #     return  message_id
 
+def step_4_query_milvus_item_names(item_names):
+    # 对查询的item_names进行向量化
+    embeddings=generate_embeddings(item_names)
+    milvus_client=get_milvus_client()
+    final_result=[]
+    # 构建查询参数reqs
+    for index,item_name in enumerate(item_names):
+        dense_vector=embeddings["dense"][index]
+        sparse_vector=embeddings["sparse"][index]
+
+        reqs=create_hybrid_search_requests(dense_vector=dense_vector,sparse_vector= sparse_vector)
+
+        # 进行混合检索
+        # 返回的数据结构为：
+        """
+        [[  
+            { id:xx,distance:0.xx,entity:{item_name:xxx} },
+            { id:xx,distance:0.xx,entity:{item_name:xxx} }
+        ]]
+        """
+        response=hybrid_search(
+                      client=milvus_client,
+                      collection_name=milvus_config.item_name_collection,
+                      reqs=reqs,
+                      ranker_weights=(0.5, 0.5),  # 混合向量权重
+                      norm_score=True             # 归一化分数  0-1
+                      )
+        # 对返回结果进行解析
+        matches=[]
+        if response and len(response)>0:
+            for hit in response[0]:
+                hit_name=hit.get("entity",{}).get("item_name","")
+                score=hit.get("distance",0)
+                if hit_name:
+                    matches.append({"item_name":hit_name,"score":score})
+
+        final_result.append({
+                            "extracted":item_name,       # 大模型提取结果
+                             "matches":matches           # 向量数据库匹配结果
+        })
+    logger.info(f"Step 4: 匹配结果: {final_result}")
+    return  final_result
+
+
+def step_5_confirm_and_option_item_names(query_milvus_result):
+    confirm_item_names = []
+    option_item_names = []
+    # 循环遍历query_milvus_result
+    for item_name_info in query_milvus_result:
+        extracted_name = item_name_info.get("extracted", "")
+        matches=item_name_info.get("matches", [])
+
+        # 对匹配的item_name按照匹配分数进行降序排序
+        matches.sort(key=lambda x: x["score"], reverse=True)
+        # 过滤高分
+        high_matches = [match for match in matches if match.get("score",0) >= 0.85]
+        middle_matches = [match for match in matches if 0.6 < match.get("score",0) >= 0.6]
+        # 只有一个高分匹配
+        if len(high_matches)==1 :
+            confirm_item_names.append(high_matches[0].get("item_name"))
+            continue
+        # 有多个高分匹配
+        if len(high_matches)>1:
+            # 优先考虑名称相同的
+            same_item_name=""
+            for match in high_matches:
+                if match.get("item_name")==extracted_name:
+                    same_item_name=match
+                    break
+            if not same_item_name:
+                same_item_name=high_matches[0] # 没有与数据库中主体名称相同的，把最高分的匹配项作为最终结果
+            confirm_item_names.append(same_item_name)
+            continue
+        if len(middle_matches)>0:
+            # 保留前两个
+            for item in middle_matches[:2]:
+                option_item_names.append(item.get("item_name"))
+            continue
+        logger.info(f"没有匹配到主体，保留原始结果: {extracted_name}")
+        # state[]
+    result={
+        "confirm_item_names":list(set(confirm_item_names)),
+        "option_item_names":list(set(option_item_names))
+    }
+    return  result
+
+
+def step_6_deal_list(state,item_result, history_messages,rewritten_query):
+    confirm_item_name=item_result.get("confirm_item_names", [])
+    option_item_names=item_result.get("option_item_names", [])
+    if len(confirm_item_name)>0:
+        # TODO 更新聊天记录 item_names->confirm_item_name
+        # 确定主体，并返回结果
+        state["item_names"]=confirm_item_name
+        state["rewritten_query"]=rewritten_query
+        state["history"]=history_messages
+        return  state
+    if len(option_item_names)>0:
+        # 可选主体，并返回结果
+        option_names=",".join(option_item_names)
+        answer=f"你是想咨询以下哪个商品：{option_names}"
+        state["answer"]=answer
+        return  state
+    answer=f"没有找到对应的商品，请重新提问"
+    state["answer"]=answer
+    return  state
+
 def node_item_name_confirm(state:QueryGraphState):
     """
     确定用户提问的主体，并且重写问题，重写用户提问 可以去除一些不明确的代词（他能xxxx）,合并历史上下文
@@ -73,15 +183,30 @@ def node_item_name_confirm(state:QueryGraphState):
     # 1.获取历史对话
     history_messages=get_recent_messages(session_id=state["session_id"], limit=5)
     logger.info(f"Node: 获取到 {len(history_messages)} 条历史消息")
-    # 2.保存用户当前消息
-    message_id=save_chat_message(session_id, "user", original_query, "", state.get("item_names", []))
-    logger.info(f"保存用户当前消息成功，message_id: {message_id}")
+
+
     # 3.提取消息 {"item_names":[大模型从用户提问以及结合历史对话提取的主体名称列表],"rewritten_query":"重写的用户提问"}
     extract_res=step_3_extract_info(state["original_query"], history_messages)
     # 更新 State 中的 rewrite_query
     rewritten_query = extract_res.get("rewritten_query", original_query)
     state["rewritten_query"] = rewritten_query
-    # 4.根据
+    item_names=extract_res.get("item_names", [])
+    item_results={}
+    if len(item_names)>0:
+        # 4.将大模型生成的主体名称到向量数据库中作相似度查询获取到精确的名称
+        query_milvus_result=step_4_query_milvus_item_names(item_names)
+        # 5.处理查询结果，返回结果{确定的item_name:[],可选的item_name:[] }
+        item_results=step_5_confirm_and_option_item_names(query_milvus_result)
+
+    # 6.处理列表
+    state=step_6_deal_list(state,item_results,history_messages,rewritten_query)
+    # 保存历史对话
+    # if state.get("answer"):
+    #     save_chat_message(session_id=session_id, role="assistant", text=state.get("answer", ""),item_names=[],image_urls=[],rewritten_query= rewritten_query)
+
+    # 2.保存用户当前消息
+    message_id=save_chat_message(session_id=session_id, role="user", rewritten_query=rewritten_query, item_names=state.get("item_names", []),image_urls=state.get("image_urls", []))
+    logger.info(f"保存用户当前消息成功，message_id: {message_id}")
     add_done_task(state["session_id"], func_name, is_stream=state['is_stream'])
     logger.info(f"节点{func_name}执行完毕，状态数据：{state}")
     return state
