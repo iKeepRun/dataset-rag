@@ -151,19 +151,19 @@ def step_5_confirm_and_option_item_names(query_milvus_result):
 
 
 def step_6_deal_list(state,item_result, history_messages,rewritten_query):
-    confirm_item_name=item_result.get("confirm_item_names", [])
+    confirm_item_names=item_result.get("confirm_item_names", [])
     option_item_names=item_result.get("option_item_names", [])
-    if len(confirm_item_name)>0:
+    if len(confirm_item_names)>0:
         # TODO 更新聊天记录 item_names->confirm_item_name
         # 确定主体，并返回结果
-        state["item_names"]=confirm_item_name
+        state["item_names"]=confirm_item_names
         state["rewritten_query"]=rewritten_query
         state["history"]=history_messages
         return  state
     if len(option_item_names)>0:
         # 可选主体，并返回结果
         option_names=",".join(option_item_names)
-        answer=f"你是想咨询以下哪个商品：{option_names}"
+        answer=f"你是想咨询以下哪个商品：{option_names},请提问的时候明确主体名称"
         state["answer"]=answer
         return  state
     answer=f"没有找到对应的商品，请重新提问"
