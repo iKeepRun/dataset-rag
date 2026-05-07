@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override= True)
 
 
 # 定义mcp的服务配置
@@ -13,6 +13,6 @@ class McpConfig:
     api_key : str
 
 mcp_config = McpConfig(
-    mcp_base_url=os.getenv("MCP_DASHSCOPE_BASE_URL"),
+    mcp_base_url=os.getenv("MCP_DASHSCOPE_BASE_URL_STREAMABLE"),
     api_key=os.getenv("OPENAI_API_KEY")
 )
