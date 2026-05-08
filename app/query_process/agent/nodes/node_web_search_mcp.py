@@ -58,10 +58,25 @@ def node_web_search_mcp(state:QueryGraphState):
        "isError": false,
        "content": [
          {
-           "text": "{\"pages\":[{\"snippet\":\"和讯首页|手机和讯 登录注册 股票客户端 Android 股票客户端 iPhone\",\"hostname\":\"和讯网\",\"hostlogo\":\"https://img.alicdn.com/imgextra/i3/O1CN01VcUfI91cc0kCH3Gt2_!!6000000003620-73-tps-32-32.ico\",
-                                   \"title\":\"行情中心-和讯网 国内全面的即时行情数据服务中心\",
-                                   \"url\":\"https://quote.hexun.com/\"},
-                                {\"snippet\":\"数据中心\",\"hostname\":\"东方财富网\",\"hostlogo\":\"https://img.alicdn.com/imgextra/i1/O1CN01iL4mYC1cF6vgiem0A_!!6000000003570-55-tps-32-32.svg\",\"title\":\"股票\",\"url\":\"https://stock.eastmoney.com/\"},{\"snippet\":\"意见反馈\",\"hostname\":\"东方财富网\",\"hostlogo\":\"https://quote.eastmoney.com/favicon.ico\",\"title\":\"行情中心:国内快捷全面的股票、基金、期货、美股、港股、外汇、黄金、债券行情系统_东方财富网\",\"url\":\"https://quote.eastmoney.com/center/qqzs.html#!/stealingyourhistory\"}],\"request_id\":\"faa40120-ee17-4401-a6c5-9970da077c05\",\"tools\":[],\"status\":0}",
+           "text": "{\"pages\":[{\"snippet\":\"和讯首页|手机和讯 登录注册 股票客户端 Android 股票客户端 iPhone\",
+                                 \"hostname\":\"和讯网\",
+                                 \"hostlogo\":\"https://img.alicdn.com/imgextra/i3/O1CN01VcUfI91cc0kCH3Gt2_!!6000000003620-73-tps-32-32.ico\",
+                                 \"title\":\"行情中心-和讯网 国内全面的即时行情数据服务中心\",
+                                 \"url\":\"https://quote.hexun.com/\"},
+                                 
+                                {\"snippet\":\"数据中心\",
+                                 \"hostname\":\"东方财富网\",
+                                 \"hostlogo\":\"https://img.alicdn.com/imgextra/i1/O1CN01iL4mYC1cF6vgiem0A_!!6000000003570-55-tps-32-32.svg\",
+                                 \"title\":\"股票\",
+                                  \"url\":\"https://stock.eastmoney.com/\"},
+                                 
+                                 {\"snippet\":\"意见反馈\",
+                                 \"hostname\":\"东方财富网\",
+                                 \"hostlogo\":\"https://quote.eastmoney.com/favicon.ico\",
+                                 \"title\":\"行情中心:国内快捷全面的股票、基金、期货、美股、港股、外汇、黄金、债券行情系统_东方财富网\",
+                                 \"url\":\"https://quote.eastmoney.com/center/qqzs.html#!/stealingyourhistory\"}],
+                                 
+                    \"request_id\":\"faa40120-ee17-4401-a6c5-9970da077c05\",\"tools\":[],\"status\":0}",
            "type": "text"
          }
        ]
