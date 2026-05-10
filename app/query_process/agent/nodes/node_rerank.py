@@ -8,6 +8,14 @@ from app.utils.task_utils import add_running_task, add_done_task
 from app.core.logger import logger
 
 
+RERANK_MAX_TOPK:int= 10
+RERABK_MIN_TOPK:int= 1
+# 断崖阀值（相对）
+RERANK_GAP_RATIO:float= 0.25
+# 断崖阀值 （绝对）
+RERANK_GAP_ABS:float=0.5  # 最大间隔分数
+
+
 def step_1_merge_result(state):
     rrf_chunks = state["rrf_chunks"]
     web_docs = state["web_search_docs"]
@@ -49,6 +57,48 @@ def step_2_rerank(merge_result, state):
         merge["score"]=score
     return merge_result.sort(key=lambda x:x["score"],reverse=True)
 
+
+def step_3_topk(rerank_result, state):
+    # 最多获取的元素数量
+    max_topk=RERANK_MAX_TOPK
+    # 最少获取的元素数量
+    min_topk=RERABK_MIN_TOPK
+    # 绝对分
+    gap_abs=RERANK_GAP_ABS
+    # 相对分
+    gap_ratio=RERANK_GAP_RATIO
+
+    actual_topk=min(max_topk,len(rerank_result))
+    for i in range(actual_topk-1):
+        front=rerank_result[i]
+        back=rerank_result[i+1]
+
+        score_diff=back["score"]-front["score"]
+        if (i+1)>=min_topk:
+            if score_diff>gap_abs or score_diff>gap_ratio*front["score"]:
+                return  i+1
+    return actual_topk
+
+def strp_3_topk_1(rerank_result, state):
+    # 最多获取的元素数量
+    max_topk = RERANK_MAX_TOPK
+    # 最少获取的元素数量
+    min_topk = RERABK_MIN_TOPK
+    # 绝对分
+    gap_abs = RERANK_GAP_ABS
+    # 相对分
+    gap_ratio = RERANK_GAP_RATIO
+    topk=min(max_topk,len(rerank_result))
+    if topk>min_topk:
+        for index in range(min_topk-1,topk-1):
+            score_1=rerank_result[index]["score"]
+            score_2=rerank_result[index+1]["score"]
+            gap=score_2-score_1
+            rel=gap/(abs(score_1)+1e-6)
+            if gap>=gap_abs or rel>=gap_ratio:
+                return index+1
+    return topk
+
 def node_rerank(state: QueryGraphState):
     func_name = sys._getframe().f_code.co_name
     add_running_task(state['session_id'], func_name, is_stream=state['is_stream'])
@@ -71,7 +121,10 @@ def node_rerank(state: QueryGraphState):
                      }
                    ]
     """
-    # 3. 返回结果
+    # 3. 处理结果，取topk个
+    actual_topk=step_3_topk(rerank_result,state)
+    state["reranked_docs"] = rerank_result[:actual_topk]
+
     add_done_task(state["session_id"], func_name, is_stream=state['is_stream'])
     logger.info(f"节点{func_name}执行完毕，状态数据：{state}")
     return state
